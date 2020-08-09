@@ -55,6 +55,7 @@ angular.module('portainer.app').controller('StackController', [
     $scope.formValues = {
       Prune: false,
       Endpoint: null,
+      Env: [],
     };
 
     $window.onbeforeunload = () => {
@@ -63,9 +64,14 @@ angular.module('portainer.app').controller('StackController', [
       }
     };
 
+    $scope.handleEnvVarChange = handleEnvVarChange;
+    function handleEnvVarChange(value) {
+      $scope.formValues.Env = value;
+    }
+
     $scope.duplicateStack = function duplicateStack(name, endpointId) {
       var stack = $scope.stack;
-      var env = FormHelper.removeInvalidEnvVars(stack.Env);
+      var env = FormHelper.removeInvalidEnvVars($scope.formValues.Env);
       EndpointProvider.setEndpointID(endpointId);
 
       return StackService.duplicateStack(name, $scope.stackFileContent, env, endpointId, stack.Type).then(onDuplicationSuccess).catch(notifyOnError);
@@ -164,7 +170,7 @@ angular.module('portainer.app').controller('StackController', [
 
     $scope.deployStack = function () {
       var stackFile = $scope.stackFileContent;
-      var env = FormHelper.removeInvalidEnvVars($scope.stack.Env);
+      var env = FormHelper.removeInvalidEnvVars($scope.formValues.Env);
       var prune = $scope.formValues.Prune;
       var stack = $scope.stack;
 
@@ -190,14 +196,6 @@ angular.module('portainer.app').controller('StackController', [
         .finally(function final() {
           $scope.state.actionInProgress = false;
         });
-    };
-
-    $scope.addEnvironmentVariable = function () {
-      $scope.stack.Env.push({ name: '', value: '' });
-    };
-
-    $scope.removeEnvironmentVariable = function (index) {
-      $scope.stack.Env.splice(index, 1);
     };
 
     $scope.editorUpdate = function (cm) {
@@ -269,6 +267,8 @@ angular.module('portainer.app').controller('StackController', [
           $scope.groups = data.groups;
           $scope.stack = stack;
           $scope.containerNames = ContainerHelper.getContainerNames(data.containers);
+
+          $scope.formValues.Env = $scope.stack.Env;
 
           let resourcesPromise = Promise.resolve({});
           if (stack.Status === 1) {
